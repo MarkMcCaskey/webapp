@@ -1,0 +1,8 @@
+[package]
+name = "webapp"
+version = "0.1.0"
+authors = ["MarkMcCaskey <rabidwaffle@gmail.com>"]
+
+[dependencies]
+rocket = "0.3.0"
+rocket_codegen = "*"

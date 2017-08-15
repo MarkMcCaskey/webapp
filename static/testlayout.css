@@ -4,7 +4,7 @@ body {
 
 .container {
     display: grid;
-    grid-template: 20% 1fr 1fr 20% / 20% 1fr 1fr 20%;
+    grid-template: 60% 1fr 1fr 20% / 60% 1fr 1fr 20%;
     grid-gap: 10px;
     background-color: #fff;
     color: #444;

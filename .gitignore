@@ -2,3 +2,6 @@ target/
 **/*.rs.bk
 node_modules/
 static/assets/
+.env
+migrations/
+elm-stuff/

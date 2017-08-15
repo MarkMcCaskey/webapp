@@ -5,8 +5,9 @@
   "description": "",
   "main": "frontend/index.js",
   "scripts": {
-    "start": "cargo run --release",
-    "build": "cargo build --release && npm install && node_modules/webpack/bin/webpack.js"
+    "start": "cargo run",
+    "build": "cargo build && npm install && node_modules/webpack/bin/webpack.js",
+    "release": "cargo run --release"
   },
   "devDependencies": {
     "babel-core": "^6.21.0",

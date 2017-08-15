@@ -3,5 +3,4 @@ target/
 node_modules/
 static/assets/
 .env
-migrations/
 elm-stuff/

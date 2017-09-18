@@ -7,10 +7,10 @@ authors = ["MarkMcCaskey <rabidwaffle@gmail.com>"]
 rocket = "0.3.0"
 rocket_codegen = "0.3.0"
 rocket_contrib = { version = "0.3.0", features = ["json"]}
-diesel = { version = "0.15.2", features = ["postgres"] }
-diesel_codegen = { version = "0.15.0", features = ["postgres"] }
-r2d2 = "0.7.3"
-r2d2-diesel = "0.15.0"
+diesel = { version = "0.16.0", features = ["postgres"] }
+diesel_codegen = { version = "0.16.0", features = ["postgres"] }
+r2d2 = "0.7.4"
+r2d2-diesel = "0.16.0"
 dotenv = "0.10.1"
 serde = "*"
 serde_json = "*"

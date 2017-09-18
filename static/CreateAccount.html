@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Login</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>CreateAccount</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">
 (function() {
 'use strict';
@@ -9585,13 +9585,13 @@ var _elm_lang$navigation$Navigation$onEffects = F4(
 			stepState);
 	});
 _elm_lang$core$Native_Platform.effectManagers['Navigation'] = {pkg: 'elm-lang/navigation', init: _elm_lang$navigation$Navigation$init, onEffects: _elm_lang$navigation$Navigation$onEffects, onSelfMsg: _elm_lang$navigation$Navigation$onSelfMsg, tag: 'fx', cmdMap: _elm_lang$navigation$Navigation$cmdMap, subMap: _elm_lang$navigation$Navigation$subMap};
-var _user$project$Login$loginRequest = F2(
+var _user$project$CreateAccount$loginRequest = F2(
 	function (name, password) {
 		return _elm_lang$http$Http$request(
 			{
 				method: 'POST',
 				headers: {ctor: '[]'},
-				url: '/login',
+				url: '/create_account',
 				body: _elm_lang$http$Http$jsonBody(
 					_elm_lang$core$Json_Encode$object(
 						{
@@ -9619,39 +9619,63 @@ var _user$project$Login$loginRequest = F2(
 				withCredentials: true
 			});
 	});
-var _user$project$Login$subscriptions = function (model) {
+var _user$project$CreateAccount$subscriptions = function (model) {
 	return _elm_lang$core$Platform_Sub$none;
 };
-var _user$project$Login$Model = F2(
-	function (a, b) {
-		return {name: a, password: b};
+var _user$project$CreateAccount$viewValidation = function (model) {
+	var _p0 = (_elm_lang$core$Native_Utils.cmp(
+		_elm_lang$core$String$length(model.password),
+		8) < 0) ? {ctor: '_Tuple2', _0: 'red', _1: 'Password too short'} : (_elm_lang$core$Native_Utils.eq(model.password, model.confirmPassword) ? {ctor: '_Tuple2', _0: 'green', _1: 'OK'} : {ctor: '_Tuple2', _0: 'red', _1: 'Passwords do not match'});
+	var color = _p0._0;
+	var message = _p0._1;
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$style(
+				{
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'color', _1: color},
+					_1: {ctor: '[]'}
+				}),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text(message),
+			_1: {ctor: '[]'}
+		});
+};
+var _user$project$CreateAccount$Model = F3(
+	function (a, b, c) {
+		return {name: a, password: b, confirmPassword: c};
 	});
-var _user$project$Login$init = {
+var _user$project$CreateAccount$init = {
 	ctor: '_Tuple2',
-	_0: A2(_user$project$Login$Model, '', ''),
+	_0: A3(_user$project$CreateAccount$Model, '', '', ''),
 	_1: _elm_lang$core$Platform_Cmd$none
 };
-var _user$project$Login$Done = {ctor: 'Done'};
-var _user$project$Login$SendName = function (a) {
+var _user$project$CreateAccount$Done = {ctor: 'Done'};
+var _user$project$CreateAccount$SendName = function (a) {
 	return {ctor: 'SendName', _0: a};
 };
-var _user$project$Login$sendLoginInfo = F2(
+var _user$project$CreateAccount$sendLoginInfo = F2(
 	function (name, password) {
 		return A2(
 			_elm_lang$http$Http$send,
-			_user$project$Login$SendName,
-			A2(_user$project$Login$loginRequest, name, password));
+			_user$project$CreateAccount$SendName,
+			A2(_user$project$CreateAccount$loginRequest, name, password));
 	});
-var _user$project$Login$update = F2(
+var _user$project$CreateAccount$update = F2(
 	function (msg, model) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
+		var _p1 = msg;
+		switch (_p1.ctor) {
 			case 'Name':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{name: _p0._0}),
+						{name: _p1._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Password':
@@ -9659,22 +9683,30 @@ var _user$project$Login$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{password: _p0._0}),
+						{password: _p1._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'ConfirmPassword':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{confirmPassword: _p1._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Submit':
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: A2(_user$project$Login$sendLoginInfo, model.name, model.password)
+					_1: A2(_user$project$CreateAccount$sendLoginInfo, model.name, model.password)
 				};
 			case 'SendName':
-				if (_p0._0.ctor === 'Ok') {
+				if (_p1._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{name: _p0._0._0}),
+							{name: _p1._0._0}),
 						_1: _elm_lang$navigation$Navigation$load('/hello')
 					};
 				} else {
@@ -9684,14 +9716,17 @@ var _user$project$Login$update = F2(
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 		}
 	});
-var _user$project$Login$Submit = {ctor: 'Submit'};
-var _user$project$Login$Password = function (a) {
+var _user$project$CreateAccount$Submit = {ctor: 'Submit'};
+var _user$project$CreateAccount$ConfirmPassword = function (a) {
+	return {ctor: 'ConfirmPassword', _0: a};
+};
+var _user$project$CreateAccount$Password = function (a) {
 	return {ctor: 'Password', _0: a};
 };
-var _user$project$Login$Name = function (a) {
+var _user$project$CreateAccount$Name = function (a) {
 	return {ctor: 'Name', _0: a};
 };
-var _user$project$Login$view = function (model) {
+var _user$project$CreateAccount$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
@@ -9717,7 +9752,7 @@ var _user$project$Login$view = function (model) {
 							_0: _elm_lang$html$Html_Attributes$placeholder('Name'),
 							_1: {
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onInput(_user$project$Login$Name),
+								_0: _elm_lang$html$Html_Events$onInput(_user$project$CreateAccount$Name),
 								_1: {ctor: '[]'}
 							}
 						}
@@ -9735,7 +9770,7 @@ var _user$project$Login$view = function (model) {
 								_0: _elm_lang$html$Html_Attributes$placeholder('Password'),
 								_1: {
 									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onInput(_user$project$Login$Password),
+									_0: _elm_lang$html$Html_Events$onInput(_user$project$CreateAccount$Password),
 									_1: {ctor: '[]'}
 								}
 							}
@@ -9744,29 +9779,52 @@ var _user$project$Login$view = function (model) {
 					_1: {
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$button,
+							_elm_lang$html$Html$input,
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(_user$project$Login$Submit),
-								_1: {ctor: '[]'}
+								_0: _elm_lang$html$Html_Attributes$type_('password'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$placeholder('Password, again'),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Events$onInput(_user$project$CreateAccount$ConfirmPassword),
+										_1: {ctor: '[]'}
+									}
+								}
 							},
-							{
+							{ctor: '[]'}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$button,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onClick(_user$project$CreateAccount$Submit),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Login'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('Login'),
+								_0: _user$project$CreateAccount$viewValidation(model),
 								_1: {ctor: '[]'}
-							}),
-						_1: {ctor: '[]'}
+							}
+						}
 					}
 				}
 			}
 		});
 };
-var _user$project$Login$main = _elm_lang$html$Html$program(
-	{init: _user$project$Login$init, view: _user$project$Login$view, update: _user$project$Login$update, subscriptions: _user$project$Login$subscriptions})();
+var _user$project$CreateAccount$main = _elm_lang$html$Html$program(
+	{init: _user$project$CreateAccount$init, view: _user$project$CreateAccount$view, update: _user$project$CreateAccount$update, subscriptions: _user$project$CreateAccount$subscriptions})();
 var Elm = {};
-Elm['Login'] = Elm['Login'] || {};
-if (typeof _user$project$Login$main !== 'undefined') {
-    _user$project$Login$main(Elm['Login'], 'Login', undefined);
+Elm['CreateAccount'] = Elm['CreateAccount'] || {};
+if (typeof _user$project$CreateAccount$main !== 'undefined') {
+    _user$project$CreateAccount$main(Elm['CreateAccount'], 'CreateAccount', undefined);
 }
 
 if (typeof define === "function" && define['amd'])
@@ -9798,4 +9856,4 @@ for (var publicModule in Elm)
 }
 
 }).call(this);
-</script></head><body><script type="text/javascript">Elm.Login.fullscreen()</script></body></html>
+</script></head><body><script type="text/javascript">Elm.CreateAccount.fullscreen()</script></body></html>

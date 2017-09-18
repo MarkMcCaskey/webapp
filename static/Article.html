@@ -9609,54 +9609,26 @@ var _user$project$Article$word = F2(
 				_1: {ctor: '[]'}
 			});
 	});
-var _user$project$Article$update = F2(
-	function (msg, model) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
-			case 'Init':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'Loading':
-				if (_p0._0.ctor === 'Ok') {
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								articleContent: _elm_lang$core$Maybe$Just(_p0._0._0)
-							}),
-						_1: _elm_lang$core$Platform_Cmd$none
-					};
-				} else {
-					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-				}
-			case 'Normal':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'WordClicked':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			default:
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-		}
-	});
 var _user$project$Article$getText = function (m) {
-	var _p1 = m.articleContent;
-	if (_p1.ctor === 'Just') {
-		return _p1._0.articleText;
+	var _p0 = m.articleContent;
+	if (_p0.ctor === 'Just') {
+		return _elm_lang$core$Array$toList(_p0._0.content_in_words);
 	} else {
 		return {ctor: '[]'};
 	}
 };
 var _user$project$Article$getWordList = function (m) {
-	var _p2 = m.articleContent;
-	if (_p2.ctor === 'Just') {
-		return _p2._0.unknownWords;
+	var _p1 = m.articleContent;
+	if (_p1.ctor === 'Just') {
+		return _elm_lang$core$Dict$fromList(_p1._0.unknown_words);
 	} else {
 		return _elm_lang$core$Dict$empty;
 	}
 };
 var _user$project$Article$getTitle = function (m) {
-	var _p3 = m.articleContent;
-	if (_p3.ctor === 'Just') {
-		return _p3._0.title;
+	var _p2 = m.articleContent;
+	if (_p2.ctor === 'Just') {
+		return _p2._0.title;
 	} else {
 		return '';
 	}
@@ -9716,16 +9688,9 @@ _user$project$Article_ops['|:'] = _user$project$Article$apply;
 var _user$project$Article$Model = function (a) {
 	return {articleContent: a};
 };
-var _user$project$Article$init = {
-	ctor: '_Tuple2',
-	_0: _user$project$Article$Model(_elm_lang$core$Maybe$Nothing),
-	_1: _elm_lang$core$Platform_Cmd$none
-};
-var _user$project$Article$main = _elm_lang$html$Html$program(
-	{init: _user$project$Article$init, view: _user$project$Article$view, update: _user$project$Article$update, subscriptions: _user$project$Article$subscriptions})();
-var _user$project$Article$ArticleContent = F3(
-	function (a, b, c) {
-		return {title: a, unknownWords: b, articleText: c};
+var _user$project$Article$ArticleContent = F5(
+	function (a, b, c, d, e) {
+		return {title: a, content_in_words: b, unknown_words: c, studying_words: d, language: e};
 	});
 var _user$project$Article$decodeArticleContent = A2(
 	_user$project$Article_ops['|:'],
@@ -9733,16 +9698,25 @@ var _user$project$Article$decodeArticleContent = A2(
 		_user$project$Article_ops['|:'],
 		A2(
 			_user$project$Article_ops['|:'],
-			_elm_lang$core$Json_Decode$succeed(_user$project$Article$ArticleContent),
-			A2(_user$project$Article_ops[':='], 'title', _elm_lang$core$Json_Decode$string)),
+			A2(
+				_user$project$Article_ops['|:'],
+				A2(
+					_user$project$Article_ops['|:'],
+					_elm_lang$core$Json_Decode$succeed(_user$project$Article$ArticleContent),
+					A2(_user$project$Article_ops[':='], 'title', _elm_lang$core$Json_Decode$string)),
+				A2(
+					_user$project$Article_ops[':='],
+					'content_in_words',
+					_elm_lang$core$Json_Decode$array(_elm_lang$core$Json_Decode$string))),
+			A2(
+				_user$project$Article_ops[':='],
+				'unknown_words',
+				_elm_lang$core$Json_Decode$keyValuePairs(_elm_lang$core$Json_Decode$string))),
 		A2(
 			_user$project$Article_ops[':='],
-			'unknown words',
-			_elm_lang$core$Json_Decode$dict(_elm_lang$core$Json_Decode$string))),
-	A2(
-		_user$project$Article_ops[':='],
-		'article text',
-		_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)));
+			'studying_words',
+			_elm_lang$core$Json_Decode$keyValuePairs(_elm_lang$core$Json_Decode$int))),
+	A2(_user$project$Article_ops[':='], 'language', _elm_lang$core$Json_Decode$string));
 var _user$project$Article$DefinitionPopup = {ctor: 'DefinitionPopup'};
 var _user$project$Article$WordClicked = function (a) {
 	return {ctor: 'WordClicked', _0: a};
@@ -9754,10 +9728,49 @@ var _user$project$Article$Loading = function (a) {
 var _user$project$Article$getArticle = function (articleID) {
 	var request = A2(
 		_elm_lang$http$Http$get,
-		A2(_elm_lang$core$Basics_ops['++'], '/article/', articleID),
+		A2(_elm_lang$core$Basics_ops['++'], 'http://localhost:8888/article_content/', articleID),
 		_user$project$Article$decodeArticleContent);
 	return A2(_elm_lang$http$Http$send, _user$project$Article$Loading, request);
 };
+var _user$project$Article$init = {
+	ctor: '_Tuple2',
+	_0: _user$project$Article$Model(_elm_lang$core$Maybe$Nothing),
+	_1: _user$project$Article$getArticle('13')
+};
+var _user$project$Article$update = F2(
+	function (msg, model) {
+		var _p3 = msg;
+		switch (_p3.ctor) {
+			case 'Init':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _user$project$Article$getArticle('13')
+				};
+			case 'Loading':
+				if (_p3._0.ctor === 'Ok') {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								articleContent: _elm_lang$core$Maybe$Just(_p3._0._0)
+							}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				} else {
+					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+				}
+			case 'Normal':
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'WordClicked':
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			default:
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		}
+	});
+var _user$project$Article$main = _elm_lang$html$Html$program(
+	{init: _user$project$Article$init, view: _user$project$Article$view, update: _user$project$Article$update, subscriptions: _user$project$Article$subscriptions})();
 var _user$project$Article$Init = {ctor: 'Init'};
 var Elm = {};
 Elm['Article'] = Elm['Article'] || {};

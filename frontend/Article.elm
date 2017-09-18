@@ -7,6 +7,7 @@ import Http
 import Navigation
 import Json.Decode as Decode
 import Dict exposing (Dict)
+import Array exposing (Array)
 import Json.Encode
 import Json.Decode exposing (field, Decoder)
 
@@ -39,17 +40,17 @@ getTitle m = case m.articleContent of
 
 getWordList : Model -> WordList
 getWordList m = case m.articleContent of
-                    Just c -> c.unknownWords
+                    Just c -> Dict.fromList c.unknown_words
                     Nothing -> Dict.empty
 
 getText : Model -> List String
 getText m = case m.articleContent of
-                Just c -> c.articleText
+                Just c -> Array.toList c.content_in_words
                 Nothing -> []
 
 
 init : (Model, Cmd Msg)
-init = (Model Nothing, Cmd.none)
+init = (Model Nothing, getArticle "13")
 --(Model "Test title" "These are some words that will be split on Elm's end.  This is additional text that is being typed to allow words to appear multiple times." (Dict.fromList [("some", "the definition of some"), ("words", "a unit of language")]), Cmd.none)
 
 type Msg
@@ -63,7 +64,7 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of 
         Init ->
-            (model, Cmd.none)
+            (model, getArticle "13")
 
         Loading (Ok articleContent) ->
             ({model | articleContent = Just articleContent}, Cmd.none)
@@ -102,21 +103,25 @@ subscriptions model =
 
 type alias ArticleContent =
     { title: String
-    , unknownWords : Dict String String
-    , articleText : List String
+    , content_in_words: Array String 
+    , unknown_words : List (String, String)
+    , studying_words: List (String, Int)
+    , language: String
     }
 
 getArticle : String -> Cmd Msg 
 getArticle articleID =
-    let request = Http.get ("/article/" ++ articleID) decodeArticleContent
+    let request = Http.get ("http://localhost:8888/article_content/" ++ articleID) decodeArticleContent
     in Http.send Loading <| request 
 
 decodeArticleContent : Json.Decode.Decoder ArticleContent
 decodeArticleContent =
     Json.Decode.succeed ArticleContent
         |: ("title" := Json.Decode.string)
-        |: ("unknown words" := Json.Decode.dict Json.Decode.string)
-        |: ("article text" := Json.Decode.list Json.Decode.string)
+        |: ("content_in_words" := Json.Decode.array Json.Decode.string)
+        |: ("unknown_words" := Json.Decode.keyValuePairs Json.Decode.string)
+        |: ("studying_words" := Json.Decode.keyValuePairs Json.Decode.int)
+        |: ("language" := Json.Decode.string)
 
 {--encodeArticleContent : ArticleContent -> Json.Encode.Value
 encodeArticleContent record =

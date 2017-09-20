@@ -6,7 +6,7 @@ authors = ["MarkMcCaskey <rabidwaffle@gmail.com>"]
 [dependencies]
 rocket = "0.3.0"
 rocket_codegen = "0.3.0"
-rocket_contrib = { version = "0.3.0", features = ["json"]}
+rocket_contrib = { version = "0.3.0", features = ["handlebars_templates", "json"]}
 diesel = { version = "0.16.0", features = ["postgres"] }
 diesel_codegen = { version = "0.16.0", features = ["postgres"] }
 r2d2 = "0.7.4"
@@ -16,3 +16,5 @@ serde = "*"
 serde_json = "*"
 serde_codegen = "0.9.0"
 serde_derive = "^1.0.11"
+blake2 = "^0.6.1"
+rand = "^0.3"

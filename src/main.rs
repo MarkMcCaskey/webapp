@@ -15,6 +15,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate serde_codegen;
+extern crate blake2;
+extern crate rand;
 
 
 use self::diesel::prelude::*;
@@ -27,10 +29,10 @@ use rocket::Request;
 use rocket::response::Redirect;
 use rocket::response::Flash;
 use rocket::request;
-use rocket::request::{FromRequest, FlashMessage};
+use rocket::request::{FromRequest, FlashMessage, Form};
 use rocket::outcome::IntoOutcome;
 //use rocket::response::content::Json;
-use rocket_contrib::Json;
+use rocket_contrib::{Json, Template};
 
 pub mod models;
 pub mod schema;
@@ -50,7 +52,7 @@ fn index() -> io::Result<NamedFile> {
 
 #[get("/login")]
 fn login_page() -> io::Result<NamedFile> {
-    NamedFile::open("static/a.html")
+    NamedFile::open("static/login.html")
 }
 
 #[get("/create_account")]
@@ -59,7 +61,7 @@ fn create_account_page() -> io::Result<NamedFile> {
 }
 
 #[get("/hello")]
-fn hello(flash: Option<FlashMessage>, mut cookies: Cookies) -> Option<String> {
+fn hello(_flash: Option<FlashMessage>, mut cookies: Cookies) -> Option<String> {
     cookies
         .get_private("user_name")
         .map(|cookie| format!("Hello, {}", cookie.value()))
@@ -71,7 +73,7 @@ fn submit_name(mut cookies: Cookies, message: String) -> Redirect {
     Redirect::to("/hello")
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, FromForm)]
 struct Login {
     username: String,
     password: String,
@@ -94,12 +96,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 }
 
 #[post("/login", data="<login>")]
-fn login(conn: DbConn, mut cookies: Cookies, login: Json<Login>) -> Flash<Redirect> {
+fn login(conn: DbConn, mut cookies: Cookies, login: Form<Login>) -> Flash<Redirect> {
     use schema::users;
     use models::User;
     let dbconn = conn.0;
     let muser: Result<User, _> = users::table
-        .filter(users::username.eq(login.0.username.clone()))
+        .filter(users::username.eq(login.get().username.clone()))
         .limit(1)
         .get_result(&*dbconn);
 
@@ -117,7 +119,7 @@ fn create_account(conn: DbConn, mut cookies: Cookies, login: Json<Login>) -> Fla
     use schema::users;
     use models::User;
     let dbconn = conn.0;
-    let muser: Result<User, _> = create_user(&*dbconn, login.0.username);
+    let muser: Result<User, _> = create_user(&*dbconn, login.0.username.as_ref(), login.0.password.as_ref());
 
     if let Ok(user) = muser {
         cookies.add_private(Cookie::new("user_id", format!("{}", user.id)));
@@ -129,18 +131,35 @@ fn create_account(conn: DbConn, mut cookies: Cookies, login: Json<Login>) -> Fla
 }
 
 
-/*#[post("/register", format="text/plain", data="<name>")]
-fn register(mut cookies: Cookies, conn: mut DbConn, name: String) -> Redirect {
-    conn.
-    cookies.add_private(Cookie::new("name", name.clone()));
-    Redirect::to("/hello")
-}*/
-
 #[get("/article/<article_id>")]
-fn load_article_page(mut cookies: Cookies,conn: DbConn,
-                article_id: i32) -> Result<io::Result<NamedFile>,Redirect> {
-    Ok(NamedFile::open("static/Article.html")) 
+fn load_article_page(mut cookies: Cookies,
+                     conn: DbConn,
+                     article_id: i32)
+                     -> Result<io::Result<NamedFile>, Redirect> {
+    Ok(NamedFile::open("static/Article.html"))
 }
+
+    
+/*#[get("/articles")]
+fn articles_hub(mut cookies: Cookies,
+                conn: DbConn) -> Template {
+    let context = cookies.get_private("user_id".map(|value| {
+        let user_id: i32 = value.value().to_string().parse::<i32>().unwrap();
+        let user: User = users::table
+            .find(user_id)
+            .first(&*conn)
+            .expect("Could not find user when looking for article");
+
+        let user_data: UserData =
+            UserData::belonging_to(&user)
+            .first(&*conn)
+            .expect("Could not find user data when looking for article");
+
+        user_data.
+});
+    Template::render("articles", context);
+    
+}*/
 
 #[get("/article_content/<article_id>")]
 fn load_article(mut cookies: Cookies,
@@ -151,7 +170,7 @@ fn load_article(mut cookies: Cookies,
     use schema::articles;
     //    use schema::users::dsl;
     //   use schema::articles::dsl;
-    use models::{Article, User, UserData};
+    use models::{Article, User};
 
     cookies
         .get_private("user_id")
@@ -162,14 +181,14 @@ fn load_article(mut cookies: Cookies,
                 .first(&*conn)
                 .expect("Could not find user when looking for article");
 
-            let user_data: UserData =
+            unimplemented!("Replace userdata below");
+
+            /*let user_data: UserData =
                 UserData::belonging_to(&user)
                     .first(&*conn)
                     .expect("Could not find user data when looking for article");
 
-            if !user_data.article_ids.contains(&article_id) {
-                return Err(Redirect::to("/login"));
-            }
+            let article_id_iter = user_data.article_ids.iter().take(10);
 
             let article: Article = articles::table
                 .find(article_id)
@@ -183,12 +202,12 @@ fn load_article(mut cookies: Cookies,
                 .expect("could not find article");*/
 
             return Ok(Json(article.process(|text| {
-                                            text.split_whitespace()
-                                                .map(|word| word.to_string())
-                                                .collect()
-                                        },
-                                        user_id,
-                                        conn)));
+                                               text.split_whitespace()
+                                                   .map(|word| word.to_string())
+                                                   .collect()
+                                           },
+                                           user_id,
+                                           conn)));*/
         });
 
     Err(Redirect::to("/login"))
@@ -213,10 +232,10 @@ fn new_article(mut cookies: Cookies, info: Json<ArticleInfo>, conn: DbConn) -> O
             //find this with the cookie
             let user_id: i32 = value.value().to_string().parse::<i32>().unwrap();
             let article = create_article(&*conn,
-                           user_id,
-                           info.title.clone(),
-                           info.text.clone(),
-                           info.language_name.clone());
+                                         user_id,
+                                         info.title.as_ref(),
+                                         info.text.as_ref(),
+                                         info.language_name.as_ref());
             return Some(Redirect::to(format!("/article/{}", article.id).as_ref()));
         });
     None
@@ -245,5 +264,6 @@ fn main() {
                        create_account_page,
                        logout])
         .manage(connection)
+        .attach(Template::fairing())
         .launch();
 }

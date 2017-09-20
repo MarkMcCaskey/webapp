@@ -7,53 +7,71 @@ use dotenv::dotenv;
 use std::env;
 use diesel;
 use models::{User, NewUser};
+use models::{Word, NewWord};
 use models::{Article, NewArticle};
-use models::{UserData, NewUserData};
+use models::{ArticleWord, NewArticleWords};
+use models::{UserArticle, NewUserArticle};
+use models::{UserWord, NewUserWord};
 
-pub fn create_user<'a>(conn: &PgConnection, name: String) -> Result<User, diesel::result::Error> {
+// This code should be audited and reviewed
+// additionally it should be optimized to not create so many Strings
+pub fn create_user<'a>(conn: &PgConnection,
+                       name: &'a str,
+                       password: &'a str)
+                       -> Result<User, diesel::result::Error> {
     use schema::users;
-    use schema::user_data;
+    use blake2::{Blake2b, Digest};
+    use rand::{Rng, StdRng};
 
-    let new_user = NewUser { username: name.as_ref() };
+    const MAX_SALT_SIZE: usize = 16;
+
+    let salt = {
+        let mut unencoded = [0u8; MAX_SALT_SIZE];
+        let mut rng = StdRng::new().expect("Could not make RNG");
+        rng.fill_bytes(&mut unencoded);
+        unencoded
+    };
+    let mut hasher = Blake2b::default();
+    hasher.input(password.as_bytes());
+    hasher.input(&salt);
+    let password_hash = hasher.result();
+    let password_hash_string = format!("{:x}", &password_hash);
+
+    let mut salt_string = String::new();
+    for byte in salt.iter() {
+        salt_string += format!("{:x}", byte).as_ref();
+    }
+
+    let new_user = NewUser {
+        username: name,
+        password_hash: password_hash_string.as_ref(),
+        salt: salt_string.as_ref(),
+    };
 
     let user: User = diesel::insert(&new_user)
         .into(users::table)
         .get_result(conn)?;
     //  .expect("Error adding new user");
 
-    let default_user_word_ids = vec![];
-    let default_user_article_ids = vec![];
-    let new_user_data = NewUserData {
-        user_id: user.id,
-        article_ids: default_user_article_ids.as_slice(),
-        users_word_ids: default_user_word_ids.as_slice(),
-    };
-
-    diesel::insert(&new_user_data)
-        .into(user_data::table)
-        .execute(conn)?;
-    //.expect("Error adding new user data");
-
     Ok(user)
 }
 
 pub fn create_article<'a>(conn: &PgConnection,
                           user_id: i32,
-                          title: String,
-                          text: String,
-                          language_name: String)
+                          title: &'a str,
+                          text: &'a str,
+                          language_id: &'a str)
                           -> Article {
     use schema::articles;
-    use schema::user_data;
+    use schema::user_articles;
 
     let unique_word_ids: Vec<i32> = vec![];
 
     //find unique words
     let new_article = NewArticle {
-        title: title.as_ref(),
-        text: text.as_ref(),
-        language_name: language_name.as_ref(),
-        unique_word_ids: unique_word_ids.as_slice(),
+        title: title,
+        text: text,
+        language_id: language_id,
     };
 
     print_sql!(diesel::insert(&new_article).into(articles::table))
@@ -63,16 +81,16 @@ pub fn create_article<'a>(conn: &PgConnection,
         .get_result(conn)
         .expect("Error adding new article");
 
-    let mut user_data: UserData = user_data::table
-        .find(user_id)
-        .get_result(conn)
-        .expect("Could not find user_data for the given user");
-    user_data.article_ids.push(article.id);
+    let new_user_article = NewUserArticle {
+        user_id: user_id,
+        article_id: article.id,
+    };
 
-    diesel::update(user_data::table.filter(user_data::user_id.eq(user_id)))
-        .set(user_data::article_ids.eq(user_data.article_ids))
+
+    diesel::insert(&new_user_article)
+        .into(user_articles::table)
         .execute(conn)
-        .expect("Could not update user data with new article");
+        .expect("Error adding new article to user");
 
     article
 }

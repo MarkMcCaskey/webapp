@@ -37,6 +37,18 @@ DATABASE_URL=postgres://postgres:password@localhost/diesel
 ```
 
 
+### Security
+
+This code has not been audited or reviewed and is not fit for
+production use.
+
+Passwords are stored by hashing with Blake2b using a random salt of up
+to 16 bytes.
+
+By using this code you are taking responsibility for any loss or
+damage that may occur.  If you notice any potential problems when
+reviewing the code, please submit an issue or a pull request.
+
 ## Frontend
 
 ```

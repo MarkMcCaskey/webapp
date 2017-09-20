@@ -31,7 +31,7 @@ pub struct Word {
     pub language_specific_word_data: Option<String>,
 }
 
-#[derive(Queryable, Identifiable, Associations)]
+#[derive(Queryable, Identifiable, Associations, Serialize)]
 #[belongs_to(Language, foreign_key="language_id")]
 pub struct Article {
     pub id: i32,
@@ -42,8 +42,8 @@ pub struct Article {
 
 #[derive(Queryable, Identifiable, Associations)]
 #[primary_key(article_id, word_id)]
-#[belongs_to(Article, foreign_key="article_id")]
-#[belongs_to(Word, foreign_key="word_id")]
+#[belongs_to(Article)]
+#[belongs_to(Word)]
 pub struct ArticleWord {
     pub article_id: i32,
     pub word_id: i32,
@@ -51,7 +51,8 @@ pub struct ArticleWord {
 
 #[derive(Queryable, Identifiable, Associations)]
 #[primary_key(user_id, article_id)]
-#[belongs_to(Article, Word)]
+#[belongs_to(User)]
+#[belongs_to(Article)]
 pub struct UserArticle {
     pub user_id: i32,
     pub article_id: i32,

@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <title>Lingua - Create an account</title>
+    <script src="js/create_account.js"></script>
+  </head>
+  <body onload="passwordValidation()">
+    <h1>Create an account</h1>
+    <form action="/create_account" method="post" class="pure-form" required>
+    <fieldset>
+      <input type="text" placeholder="Username" name="username" required pattern="[a-zA-Z0-9]{3,16}">
+      <input type="password" placeholder="Password" name="password" id="password" required>
+      <input type="password" placeholder="Confirm password" id="confirm_password" required>
+      <button type="submit" class="pure-button pure-button-primary">Create account</button>
+      </fieldset>
+    <label>Username must be between 3 to 16 alpha-numeric characters.  Passwords must match.</label>
+    </form>
+  </body>
+</html>

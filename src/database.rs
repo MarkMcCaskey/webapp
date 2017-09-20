@@ -74,8 +74,7 @@ pub fn create_article<'a>(conn: &PgConnection,
         language_id: language_id,
     };
 
-    print_sql!(diesel::insert(&new_article).into(articles::table))
-;
+    print_sql!(diesel::insert(&new_article).into(articles::table));
     let article: Article = diesel::insert(&new_article)
         .into(articles::table)
         .get_result(conn)
@@ -93,6 +92,52 @@ pub fn create_article<'a>(conn: &PgConnection,
         .expect("Error adding new article to user");
 
     article
+}
+
+
+pub fn get_article(conn: &PgConnection,
+                   user_id: i32,
+                   article_id: i32)
+                   -> Result<Article, diesel::result::Error> {
+    use schema::users;
+    use schema::articles;
+    use schema::user_articles;
+    use models::UserArticle;
+    use models::User;
+    use models::Article;
+
+    let user: User = users::table.find(user_id).first(conn)?;
+    let user_article: UserArticle = UserArticle::belonging_to(&user)
+        .find((user_id, article_id))
+        .first(conn)?;
+    let article: Article = articles::table.find(user_article.article_id).first(conn)?;
+
+    Ok(article)
+}
+
+pub fn get_articles(conn: &PgConnection,
+                    user_id: i32,
+                    amount: i64)
+                    -> Result<Vec<Article>, diesel::result::Error> {
+    use schema::users;
+    use schema::articles;
+    use schema::user_articles;
+    use models::UserArticle;
+    use models::User;
+    use models::Article;
+
+    let user: User = users::table.find(user_id).first(conn)?;
+    let user_articles: Vec<UserArticle> =
+        UserArticle::belonging_to(&user).limit(amount).load(conn)?;
+    Ok(user_articles
+           .iter()
+           .map(|u_article| {
+                    articles::table
+                        .find(u_article.article_id)
+                        .first(conn)
+                        .expect("Database is corrupt, article in UserArticle was not found")
+                })
+           .collect())
 }
 
 pub fn establish_connection() -> PgConnection {

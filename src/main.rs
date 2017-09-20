@@ -13,6 +13,7 @@ extern crate r2d2_diesel;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate serde_codegen;
 extern crate blake2;
@@ -29,7 +30,7 @@ use rocket::Request;
 use rocket::response::Redirect;
 use rocket::response::Flash;
 use rocket::request;
-use rocket::request::{FromRequest, FlashMessage, Form};
+use rocket::request::{FromRequest, FlashMessage, Form, LenientForm};
 use rocket::outcome::IntoOutcome;
 //use rocket::response::content::Json;
 use rocket_contrib::{Json, Template};
@@ -50,6 +51,11 @@ fn index() -> io::Result<NamedFile> {
     NamedFile::open("static/index.html")
 }
 
+#[get("/js/<filename>")]
+fn static_js(filename: String) -> io::Result<NamedFile> {
+    NamedFile::open(format!("static/{}", filename))
+}
+
 #[get("/login")]
 fn login_page() -> io::Result<NamedFile> {
     NamedFile::open("static/login.html")
@@ -57,7 +63,7 @@ fn login_page() -> io::Result<NamedFile> {
 
 #[get("/create_account")]
 fn create_account_page() -> io::Result<NamedFile> {
-    NamedFile::open("static/CreateAccount.html")
+    NamedFile::open("static/create_account.html")
 }
 
 #[get("/hello")]
@@ -65,12 +71,6 @@ fn hello(_flash: Option<FlashMessage>, mut cookies: Cookies) -> Option<String> {
     cookies
         .get_private("user_name")
         .map(|cookie| format!("Hello, {}", cookie.value()))
-}
-
-#[post("/test", data = "<message>")]
-fn submit_name(mut cookies: Cookies, message: String) -> Redirect {
-    cookies.add_private(Cookie::new("test", message));
-    Redirect::to("/hello")
 }
 
 #[derive(Deserialize, FromForm)]
@@ -108,23 +108,29 @@ fn login(conn: DbConn, mut cookies: Cookies, login: Form<Login>) -> Flash<Redire
     if let Ok(user) = muser {
         cookies.add_private(Cookie::new("user_id", format!("{}", user.id)));
         cookies.add_private(Cookie::new("user_name", format!("{}", user.username)));
-        return Flash::success(Redirect::to("/hello"), "Successfully logged in.");
+        return Flash::success(Redirect::to("/articles"), "Successfully logged in.");
     } else {
         return Flash::error(Redirect::to("/login"), "Invalid username or password");
     }
 }
 
 #[post("/create_account", data="<login>")]
-fn create_account(conn: DbConn, mut cookies: Cookies, login: Json<Login>) -> Flash<Redirect> {
+fn create_account(conn: DbConn,
+                  mut cookies: Cookies,
+                  login: LenientForm<Login>)
+                  -> Flash<Redirect> {
     use schema::users;
     use models::User;
     let dbconn = conn.0;
-    let muser: Result<User, _> = create_user(&*dbconn, login.0.username.as_ref(), login.0.password.as_ref());
+    let login_user = login.into_inner();
+    let muser: Result<User, _> = create_user(&*dbconn,
+                                             login_user.username.as_ref(),
+                                             login_user.password.as_ref());
 
     if let Ok(user) = muser {
         cookies.add_private(Cookie::new("user_id", format!("{}", user.id)));
         cookies.add_private(Cookie::new("user_name", format!("{}", user.username)));
-        return Flash::success(Redirect::to("/hello"), "Successfully logged in.");
+        return Flash::success(Redirect::to("/articles"), "Successfully logged in.");
     } else {
         return Flash::error(Redirect::to("/login"), "Invalid username or password");
     }
@@ -132,34 +138,47 @@ fn create_account(conn: DbConn, mut cookies: Cookies, login: Json<Login>) -> Fla
 
 
 #[get("/article/<article_id>")]
-fn load_article_page(mut cookies: Cookies,
-                     conn: DbConn,
-                     article_id: i32)
-                     -> Result<io::Result<NamedFile>, Redirect> {
-    Ok(NamedFile::open("static/Article.html"))
+fn load_article_page(mut cookies: Cookies, conn: DbConn, article_id: i32) -> Option<Template> {
+    use serde_json::value::{Value as Json, Map};
+    cookies
+        .get_private("user_id")
+        .and_then(|value| {
+            value
+                .value()
+                .to_string()
+                .parse::<i32>()
+                .ok()
+                .and_then(|user_id| get_article(&*conn, user_id, article_id).ok())
+                .map(|article| {
+                         let mut con_map = Map::new();
+                         con_map.insert("article".to_owned(), json!(article));
+                         Template::render("article", con_map)
+                     })
+        })
 }
 
-    
-/*#[get("/articles")]
-fn articles_hub(mut cookies: Cookies,
-                conn: DbConn) -> Template {
-    let context = cookies.get_private("user_id".map(|value| {
-        let user_id: i32 = value.value().to_string().parse::<i32>().unwrap();
-        let user: User = users::table
-            .find(user_id)
-            .first(&*conn)
-            .expect("Could not find user when looking for article");
 
-        let user_data: UserData =
-            UserData::belonging_to(&user)
-            .first(&*conn)
-            .expect("Could not find user data when looking for article");
+#[allow(resolve_trait_on_defaulted_unit)]
+#[get("/articles")]
+fn articles_hub(mut cookies: Cookies, conn: DbConn) -> Option<Template> {
+    use serde_json::value::{Value as Json, Map};
 
-        user_data.
-});
-    Template::render("articles", context);
-    
-}*/
+    cookies
+        .get_private("user_id")
+        .and_then(|value| {
+            value
+                .value()
+                .to_string()
+                .parse::<i32>()
+                .ok()
+                .and_then(|user_id| get_articles(&*conn, user_id, 10).ok())
+                .map(|articles| {
+                         let mut con_map = Map::new();
+                         con_map.insert("articles".to_owned(), json!(articles));
+                         Template::render("articles", con_map)
+                     })
+        })
+}
 
 #[get("/article_content/<article_id>")]
 fn load_article(mut cookies: Cookies,
@@ -258,11 +277,12 @@ fn main() {
                        new_article_page,
                        load_article,
                        load_article_page,
-                       submit_name,
+                       articles_hub,
                        login_page,
                        create_account,
                        create_account_page,
-                       logout])
+                       logout,
+                       static_js])
         .manage(connection)
         .attach(Template::fairing())
         .launch();

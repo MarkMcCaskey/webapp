@@ -1,3 +1,9 @@
 <html>
-  {{#list articles}}{{title}}{{/list}}
+  <head>
+    <title>Lingua - Home</title>
+  </head>
+  <body>
+    {{#each articles as |a| ~}}
+    <li><a href="article/{{a.id}}">{{a.title}}</a></li>{{/each}}
+  </body>
 </html>

@@ -1,0 +1,22 @@
+.articles {
+    display: grid;
+    grid-gap: 10px;
+    grid-auto-rows: minmax(100px, auto);
+    border: 2px solid rgb(0,0,0);
+    border-radius: 6px;
+    background-color: rgba(70,80,50,.5);
+    padding: 1em;
+    box-shader: 10px 10px grey;
+}
+
+.article {
+    grid-column: 1;
+    grid-row: 1fr;
+    border: 2px solid rgb(255,255,255);
+    border-radius: 6px;
+    background-color: rgba(0,100,240,.5);
+    padding: 1em;
+    text-align: center;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    font: 24px sans-serif;
+}

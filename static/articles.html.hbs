@@ -1,9 +1,12 @@
 <html>
   <head>
     <title>Lingua - Home</title>
+    <link rel="stylesheet" type="text/css" href="js/theme.css">
   </head>
   <body>
+    <div class="articles">
     {{#each articles as |a| ~}}
-    <li><a href="article/{{a.id}}">{{a.title}}</a></li>{{/each}}
+    <li class="article"><a href="article/{{a.id}}">{{a.title}}</a></li>{{/each}}
+    </div>
   </body>
 </html>
